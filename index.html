@@ -419,23 +419,11 @@
 </div>
 
 <script>
-const EVENTS = [
-  { id:1, name:"Boston Calling Music Festival", category:"festival", date:"Mar 15, 2026", time:"12:00 PM", location:"Harvard Athletic Complex, Allston", lat:42.3736, lng:-71.1230, crowd:45000, capacity:50000, description:"3-day music festival with 50+ artists across 4 stages.", source:"Ticketmaster" },
-  { id:2, name:"Boston Celtics vs. 76ers", category:"sports", date:"Mar 8, 2026", time:"7:30 PM", location:"TD Garden, Boston", lat:42.3662, lng:-71.0621, crowd:19156, capacity:19156, description:"NBA regular season game. Sold out arena.", source:"Ticketmaster" },
-  { id:3, name:"St. Patricks Day Parade", category:"festival", date:"Mar 16, 2026", time:"1:00 PM", location:"Broadway St, South Boston", lat:42.3355, lng:-71.0589, crowd:600000, capacity:null, description:"One of the largest St. Patricks Day parades in the US.", source:"City of Boston" },
-  { id:4, name:"Haymarket Open Air Market", category:"market", date:"Every Fri & Sat", time:"7:00 AM", location:"Blackstone St, Boston", lat:42.3627, lng:-71.0559, crowd:15000, capacity:null, description:"Historic open-air market with hundreds of vendors.", source:"Boston Markets" },
-  { id:5, name:"Boston Marathon", category:"sports", date:"Apr 21, 2026", time:"9:00 AM", location:"Boylston St Finish Line, Boston", lat:42.3476, lng:-71.0839, crowd:500000, capacity:null, description:"World's oldest annual marathon. 30,000 runners, 500,000 spectators.", source:"BAA Official" },
-  { id:6, name:"Quincy Market Food Festival", category:"festival", date:"Mar 20-22, 2026", time:"10:00 AM", location:"Faneuil Hall Marketplace", lat:42.3601, lng:-71.0559, crowd:25000, capacity:null, description:"Annual food and culture festival at Faneuil Hall. Free admission.", source:"Eventbrite" },
-  { id:7, name:"Cambridge Arts River Festival", category:"community", date:"Apr 5, 2026", time:"11:00 AM", location:"Memorial Drive, Cambridge", lat:42.3617, lng:-71.1050, crowd:40000, capacity:null, description:"Free annual arts festival along the Charles River.", source:"Eventbrite" },
-  { id:8, name:"Boston Red Sox Opening Day", category:"sports", date:"Apr 3, 2026", time:"3:05 PM", location:"Fenway Park, Boston", lat:42.3467, lng:-71.0972, crowd:37755, capacity:37755, description:"MLB Opening Day at historic Fenway Park. Sold out every year.", source:"Ticketmaster" },
-  { id:9, name:"Dorchester Day Parade", category:"community", date:"Jun 7, 2026", time:"1:00 PM", location:"Dorchester Ave, Boston", lat:42.3104, lng:-71.0681, crowd:50000, capacity:null, description:"Bostons largest neighborhood parade.", source:"City of Boston" },
-  { id:10, name:"Boston Calling EDM Night", category:"concert", date:"Mar 21, 2026", time:"8:00 PM", location:"MGM Music Hall, Fenway", lat:42.3453, lng:-71.0986, crowd:5000, capacity:5000, description:"Sold out electronic music show.", source:"Eventbrite" }
-];
-
-let map, markers = [], activeFilter = 'all', allEvents = [...EVENTS];
+let map, markers = [], activeFilter = 'all', allEvents = [];
 let selectedDonation = 10;
 const STRIPE_LINK = 'https://donate.stripe.com/eVq4gAe9T1mf4Bu6yzbbG00';
 const APP_URL = 'https://ninoorlando-cmd.github.io/Gospel-map-';
+const API_URL = 'https://gospel-map.vercel.app/api/events';
 
 function crowdColor(n) {
   if (n >= 100000) return '#E05252';
@@ -474,7 +462,43 @@ function initMap() {
   map = L.map('map', { zoomControl: false }).setView([42.3601, -71.0589], 12);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { attribution: '© CartoDB', maxZoom: 19 }).addTo(map);
   L.control.zoom({ position: 'bottomright' }).addTo(map);
-  renderAll();
+  loadEvents();
+}
+
+function showLoading() {
+  document.getElementById('eventList').innerHTML =
+    '<div style="text-align:center;padding:40px;color:#888;">' +
+    '<div style="font-size:28px;margin-bottom:12px;">✝</div>' +
+    '<div style="font-size:14px;">Loading events across Massachusetts...</div>' +
+    '</div>';
+}
+
+function loadEvents() {
+  showLoading();
+  fetch(API_URL)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.events && data.events.length > 0) {
+        allEvents = data.events;
+      } else {
+        allEvents = getFallbackEvents();
+      }
+      renderAll();
+    })
+    .catch(function(){
+      allEvents = getFallbackEvents();
+      renderAll();
+    });
+}
+
+function getFallbackEvents() {
+  return [
+    { id:1, name:"Boston Calling Music Festival", category:"festival", date:"Mar 15, 2026", time:"12:00 PM", location:"Harvard Athletic Complex, Allston", lat:42.3736, lng:-71.1230, crowd:45000, capacity:50000, description:"3-day music festival with 50+ artists.", source:"Sample Data" },
+    { id:2, name:"St. Patricks Day Parade", category:"festival", date:"Mar 16, 2026", time:"1:00 PM", location:"Broadway St, South Boston", lat:42.3355, lng:-71.0589, crowd:600000, capacity:null, description:"One of the largest parades in the US.", source:"Sample Data" },
+    { id:3, name:"Boston Marathon", category:"sports", date:"Apr 21, 2026", time:"9:00 AM", location:"Boylston St, Boston", lat:42.3476, lng:-71.0839, crowd:500000, capacity:null, description:"World oldest annual marathon.", source:"Sample Data" },
+    { id:4, name:"Boston Red Sox Opening Day", category:"sports", date:"Apr 3, 2026", time:"3:05 PM", location:"Fenway Park, Boston", lat:42.3467, lng:-71.0972, crowd:37755, capacity:37755, description:"MLB Opening Day at Fenway.", source:"Sample Data" },
+    { id:5, name:"Cambridge Arts River Festival", category:"community", date:"Apr 5, 2026", time:"11:00 AM", location:"Memorial Drive, Cambridge", lat:42.3617, lng:-71.1050, crowd:40000, capacity:null, description:"Free annual arts festival.", source:"Sample Data" }
+  ];
 }
 
 function renderAll() {
