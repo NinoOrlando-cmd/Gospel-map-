@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>GospelMap — Find the Crowds</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -293,6 +293,7 @@
       flex-direction: column;
       flex: 1;
       overflow: hidden;
+      min-height: 0;
     }
 
     .sidebar {
@@ -302,26 +303,28 @@
       display: none;
       flex: 1;
       overflow: hidden;
+      min-height: 0;
     }
 
-    .sidebar.mobile-active {
-      display: flex;
-    }
+    .sidebar.mobile-active { display: flex; }
 
     #map {
       display: none;
       width: 100%;
       flex: 1;
+      min-height: 0;
     }
 
-    #map.mobile-active {
-      display: block;
-    }
+    #map.mobile-active { display: block; }
 
     .mobile-tabs {
       display: flex;
       height: 60px;
+      min-height: 60px;
       flex-shrink: 0;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      position: relative;
+      z-index: 100;
     }
 
     .stats-bar { padding: 6px 14px; gap: 16px; }
