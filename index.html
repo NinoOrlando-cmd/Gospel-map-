@@ -272,6 +272,32 @@
     font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer;
   }
 
+  .sort-bar {
+    display: flex; gap: 6px; align-items: center;
+    padding: 8px 20px;
+    border-bottom: 1px solid #2a2a2a;
+    flex-shrink: 0; overflow-x: auto;
+  }
+
+  .sort-label { font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-right: 2px; }
+
+  .sort-chip {
+    background: var(--surface2);
+    border: 1px solid #333;
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px; cursor: pointer;
+    white-space: nowrap; transition: all 0.2s;
+  }
+
+  .sort-chip.active {
+    background: var(--surface3);
+    border-color: var(--gold);
+    color: var(--gold);
+    font-weight: 500;
+  }
+
   .mobile-tabs { display: none; background: var(--surface); border-top: 1px solid #2a2a2a; flex-shrink: 0; }
 
   .tab-btn {
@@ -319,10 +345,9 @@
 
     .mobile-tabs {
       display: flex;
-      height: 80px;
-      min-height: 80px;
+      height: 60px;
+      min-height: 60px;
       flex-shrink: 0;
-      padding-bottom: 20px;
       position: relative;
       z-index: 100;
     }
@@ -364,6 +389,13 @@
       <div class="filter-chip" onclick="filterEvents('concert', this)">Concerts</div>
       <div class="filter-chip" onclick="filterEvents('community', this)">Community</div>
       <div class="filter-chip" onclick="filterEvents('market', this)">Markets</div>
+    </div>
+    <div class="sort-bar">
+      <span class="sort-label">Sort:</span>
+      <div class="sort-chip active" onclick="sortEvents('crowd', this)">🔥 Crowd Size</div>
+      <div class="sort-chip" onclick="sortEvents('date', this)">📅 Date</div>
+      <div class="sort-chip" onclick="sortEvents('weekend', this)">📆 This Weekend</div>
+      <div class="sort-chip" onclick="sortEvents('free', this)">🆓 Free Only</div>
     </div>
     <div class="event-list" id="eventList"></div>
     <div class="stats-bar">
@@ -521,13 +553,20 @@ function getFallbackEvents() {
 }
 
 function renderAll() {
-  const filtered = activeFilter === 'all' ? allEvents : allEvents.filter(function(e){ return e.category === activeFilter; });
+  var filtered = getFiltered();
   markers.forEach(function(m){ map.removeLayer(m); });
   markers = [];
   var list = document.getElementById('eventList');
   list.innerHTML = '';
 
-  filtered.sort(function(a,b){ return b.crowd - a.crowd; }).forEach(function(ev) {
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:#888;"><div style="font-size:24px;margin-bottom:8px;">🔍</div><div style="font-size:13px;">No events found for this filter.</div></div>';
+    document.getElementById('totalEvents').textContent = '0';
+    document.getElementById('totalPeople').textContent = '0';
+    return;
+  }
+
+  filtered.forEach(function(ev) {
     var card = document.createElement('div');
     card.className = 'event-card';
     card.id = 'card-' + ev.id;
@@ -577,7 +616,7 @@ function renderAll() {
 
 function focusEvent(ev) {
   map.setView([ev.lat, ev.lng], 15, { animate: true });
-  var sorted = (activeFilter === 'all' ? allEvents : allEvents.filter(function(e){ return e.category === activeFilter; })).sort(function(a,b){ return b.crowd - a.crowd; });
+  var sorted = getFiltered();
   markers.forEach(function(m, i){ if (sorted[i] && sorted[i].id === ev.id) m.openPopup(); });
   document.querySelectorAll('.event-card').forEach(function(c){ c.classList.remove('active'); });
   var card = document.getElementById('card-' + ev.id);
@@ -591,7 +630,50 @@ function filterEvents(type, el) {
   renderAll();
 }
 
-var CITIES = {
+var activeSort = 'crowd';
+
+function sortEvents(type, el) {
+  activeSort = type;
+  document.querySelectorAll('.sort-chip').forEach(function(c){ c.classList.remove('active'); });
+  el.classList.add('active');
+  renderAll();
+}
+
+function getFiltered() {
+  var now = new Date();
+  var filtered = activeFilter === 'all' ? allEvents : allEvents.filter(function(e){ return e.category === activeFilter; });
+
+  if (activeSort === 'weekend') {
+    var day = now.getDay();
+    var daysToFri = (5 - day + 7) % 7;
+    var daysToSun = (0 - day + 7) % 7 || 7;
+    var fri = new Date(now); fri.setDate(now.getDate() + daysToFri); fri.setHours(0,0,0,0);
+    var sun = new Date(now); sun.setDate(now.getDate() + daysToSun); sun.setHours(23,59,59,999);
+    filtered = filtered.filter(function(e) {
+      if (!e.date || e.date === 'TBD') return false;
+      var d = new Date(e.date);
+      return d >= fri && d <= sun;
+    });
+  }
+
+  if (activeSort === 'free') {
+    filtered = filtered.filter(function(e) {
+      return e.url === '' || (e.description && e.description.toLowerCase().includes('free'));
+    });
+  }
+
+  if (activeSort === 'date') {
+    filtered = filtered.slice().sort(function(a, b) {
+      var da = a.date === 'TBD' ? Infinity : new Date(a.date);
+      var db = b.date === 'TBD' ? Infinity : new Date(b.date);
+      return da - db;
+    });
+  } else {
+    filtered = filtered.slice().sort(function(a, b){ return b.crowd - a.crowd; });
+  }
+
+  return filtered;
+}
   boston: { lat:42.3601, lng:-71.0589, zoom:12 },
   cambridge: { lat:42.3736, lng:-71.1106, zoom:13 },
   worcester: { lat:42.2626, lng:-71.8023, zoom:12 },
