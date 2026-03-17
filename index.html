@@ -319,10 +319,10 @@
 
     .mobile-tabs {
       display: flex;
-      height: 60px;
-      min-height: 60px;
+      height: 80px;
+      min-height: 80px;
       flex-shrink: 0;
-      padding-bottom: env(safe-area-inset-bottom, 0px);
+      padding-bottom: 20px;
       position: relative;
       z-index: 100;
     }
@@ -479,20 +479,35 @@ function showLoading() {
 
 function loadEvents() {
   showLoading();
-  fetch(API_URL)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if (data.events && data.events.length > 0) {
-        allEvents = data.events;
-      } else {
-        allEvents = getFallbackEvents();
+  Promise.allSettled([
+    fetch('https://gospel-map.vercel.app/api/events').then(function(r){ return r.json(); }),
+    fetch('https://gospel-map.vercel.app/api/ticketmaster').then(function(r){ return r.json(); })
+  ]).then(function(results) {
+    var combined = [];
+
+    results.forEach(function(result) {
+      if (result.status === 'fulfilled' && result.value.events) {
+        combined = combined.concat(result.value.events);
       }
-      renderAll();
-    })
-    .catch(function(){
-      allEvents = getFallbackEvents();
-      renderAll();
     });
+
+    // Remove duplicates by name
+    var seen = {};
+    combined = combined.filter(function(ev) {
+      var key = ev.name.toLowerCase().trim();
+      if (seen[key]) return false;
+      seen[key] = true;
+      return true;
+    });
+
+    if (combined.length > 0) {
+      allEvents = combined;
+    } else {
+      allEvents = getFallbackEvents();
+    }
+
+    renderAll();
+  });
 }
 
 function getFallbackEvents() {
