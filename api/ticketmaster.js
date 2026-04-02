@@ -12,63 +12,63 @@ try {
 var now = new Date();
 var startDateTime = now.toISOString().split(’.’)[0] + ‘Z’;
 
-
+```
 const url = 'https://app.ticketmaster.com/discovery/v2/events.json' +
-'?apikey=' + API_KEY +
-'&stateCode=MA' +
-'&size=50' +
-'&sort=date,asc' +
-'&startDateTime=' + startDateTime +
-'&includeSpellcheck=yes';
+  '?apikey=' + API_KEY +
+  '&stateCode=MA' +
+  '&size=50' +
+  '&sort=date,asc' +
+  '&startDateTime=' + startDateTime +
+  '&includeSpellcheck=yes';
 
 const response = await fetch(url);
 
 if (!response.ok) {
-const err = await response.text();
-return res.status(response.status).json({ error: err });
+  const err = await response.text();
+  return res.status(response.status).json({ error: err });
 }
 
 const data = await response.json();
 
 if (!data._embedded || !data._embedded.events) {
-return res.status(200).json({ events: [] });
+  return res.status(200).json({ events: [] });
 }
 
 const events = data._embedded.events.map(function(ev) {
-const venue = ev._embedded && ev._embedded.venues
-? ev._embedded.venues[0]
-: {};
+  const venue = ev._embedded && ev._embedded.venues
+    ? ev._embedded.venues[0]
+    : {};
 
-const lat = venue.location ? parseFloat(venue.location.latitude) : null;
-const lng = venue.location ? parseFloat(venue.location.longitude) : null;
+  const lat = venue.location ? parseFloat(venue.location.latitude) : null;
+  const lng = venue.location ? parseFloat(venue.location.longitude) : null;
 
-const capacity = venue.upcomingEvents
-? venue.upcomingEvents._total
-: null;
+  const capacity = venue.upcomingEvents
+    ? venue.upcomingEvents._total
+    : null;
 
-const segment = ev.classifications && ev.classifications[0]
-? ev.classifications[0].segment.name.toLowerCase()
-: 'community';
+  const segment = ev.classifications && ev.classifications[0]
+    ? ev.classifications[0].segment.name.toLowerCase()
+    : 'community';
 
-return {
-id: 'tm_' + ev.id,
-name: ev.name,
-category: mapSegment(segment),
-date: ev.dates && ev.dates.start ? formatDate(ev.dates.start.localDate) : 'TBD',
-time: ev.dates && ev.dates.start && ev.dates.start.localTime
-? formatTime(ev.dates.start.localTime)
-: 'TBD',
-location: [venue.name, venue.city ? venue.city.name : ''].filter(Boolean).join(', '),
-lat: lat,
-lng: lng,
-crowd: estimateCrowd(ev, venue),
-capacity: capacity,
-description: ev.info || ev.pleaseNote || ('Live event at ' + (venue.name || 'Massachusetts venue')),
-source: 'Ticketmaster',
-url: ev.url || ''
-};
+  return {
+    id: 'tm_' + ev.id,
+    name: ev.name,
+    category: mapSegment(segment),
+    date: ev.dates && ev.dates.start ? formatDate(ev.dates.start.localDate) : 'TBD',
+    time: ev.dates && ev.dates.start && ev.dates.start.localTime
+      ? formatTime(ev.dates.start.localTime)
+      : 'TBD',
+    location: [venue.name, venue.city ? venue.city.name : ''].filter(Boolean).join(', '),
+    lat: lat,
+    lng: lng,
+    crowd: estimateCrowd(ev, venue),
+    capacity: capacity,
+    description: ev.info || ev.pleaseNote || ('Live event at ' + (venue.name || 'Massachusetts venue')),
+    source: 'Ticketmaster',
+    url: ev.url || ''
+  };
 }).filter(function(ev) {
-return ev.lat && ev.lng;
+  return ev.lat && ev.lng;
 });
 
 res.setHeader('Cache-Control', 's-maxage=3600');
