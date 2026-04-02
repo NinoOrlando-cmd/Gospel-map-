@@ -12,7 +12,7 @@ try {
 var now = new Date();
 var startDateTime = now.toISOString().split(’.’)[0] + ‘Z’;
 
-```
+
 const url = 'https://app.ticketmaster.com/discovery/v2/events.json' +
 '?apikey=' + API_KEY +
 '&stateCode=MA' +
