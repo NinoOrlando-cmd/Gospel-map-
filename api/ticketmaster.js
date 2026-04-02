@@ -12,7 +12,7 @@ try {
 var now = new Date();
 var startDateTime = now.toISOString().split(’.’)[0] + ‘Z’;
 
-```
+
 const url = 'https://app.ticketmaster.com/discovery/v2/events.json' +
   '?apikey=' + API_KEY +
   '&stateCode=MA' +
@@ -73,7 +73,7 @@ const events = data._embedded.events.map(function(ev) {
 
 res.setHeader('Cache-Control', 's-maxage=3600');
 return res.status(200).json({ events: events });
-```
+
 
 } catch (err) {
 return res.status(500).json({ error: err.message });
