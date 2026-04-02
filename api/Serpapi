@@ -19,7 +19,7 @@ try {
 var allEvents = [];
 var seen = {};
 
-```
+
 for (var i = 0; i < ZONES.length; i++) {
   var zone = ZONES[i];
   try {
@@ -82,7 +82,7 @@ var geocoded = await geocodeEvents(allEvents);
 
 res.setHeader('Cache-Control', 's-maxage=3600');
 return res.status(200).json({ events: geocoded, total: geocoded.length });
-```
+
 
 } catch (err) {
 return res.status(500).json({ error: err.message });
@@ -103,7 +103,7 @@ var ZONE_COORDS = {
 for (var i = 0; i < events.length; i++) {
 var ev = events[i];
 
-```
+
 if (!ev.needsGeocode || !ev.address) {
   results.push(ev);
   continue;
@@ -140,7 +140,7 @@ delete ev.needsGeocode;
 delete ev.address;
 delete ev.zone;
 results.push(ev);
-```
+
 
 }
 
