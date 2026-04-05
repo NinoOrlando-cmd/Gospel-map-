@@ -5,6 +5,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>GospelMap — Find the Crowds</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#C9A84C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GospelMap">
+<link rel="apple-touch-icon" href="/icons/icon.svg">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -772,6 +778,10 @@ function initMobile() {
 }
 
 window.addEventListener('load', function(){ initMap(); initMobile(); });
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/service-worker.js');
+}
 </script>
 
 </body>
