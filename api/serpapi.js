@@ -1,18 +1,18 @@
 export default async function handler(req, res) {
-res.setHeader(‘Access-Control-Allow-Origin’, ‘*’);
-res.setHeader(‘Access-Control-Allow-Methods’, ‘GET’);
+res.setHeader('Access-Control-Allow-Origin', '*');
+res.setHeader('Access-Control-Allow-Methods', 'GET');
 
 const API_KEY = process.env.SERPAPI_KEY;
 
 if (!API_KEY) {
-return res.status(500).json({ error: ‘SerpApi key not configured’ });
+return res.status(500).json({ error: 'SerpApi key not configured' });
 }
 
 const ZONES = [
-{ name: ‘Boston Core’, query: ‘events in Boston Cambridge Somerville Massachusetts’ },
-{ name: ‘North Shore’, query: ‘events in Salem Lynn Gloucester Beverly Peabody Massachusetts’ },
-{ name: ‘South Shore’, query: ‘events in Quincy Brockton Plymouth Weymouth Massachusetts’ },
-{ name: ‘West MA’, query: ‘events in Worcester Springfield Lowell Lawrence Massachusetts’ },
+{ name: 'Boston Core', query: 'events in Boston Cambridge Somerville Massachusetts' },
+{ name: 'North Shore', query: 'events in Salem Lynn Gloucester Beverly Peabody Massachusetts' },
+{ name: 'South Shore', query: 'events in Quincy Brockton Plymouth Weymouth Massachusetts' },
+{ name: 'West MA', query: 'events in Worcester Springfield Lowell Lawrence Massachusetts' },
 ];
 
 try {
@@ -94,10 +94,10 @@ var results = [];
 
 // MA zone center coordinates as fallbacks
 var ZONE_COORDS = {
-‘Boston Core’: { lat: 42.3601, lng: -71.0589 },
-‘North Shore’: { lat: 42.5195, lng: -70.8967 },
-‘South Shore’: { lat: 42.2529, lng: -70.9773 },
-‘West MA’: { lat: 42.2626, lng: -71.8023 },
+'Boston Core': { lat: 42.3601, lng: -71.0589 },
+'North Shore': { lat: 42.5195, lng: -70.8967 },
+'South Shore': { lat: 42.2529, lng: -70.9773 },
+'West MA': { lat: 42.2626, lng: -71.8023 },
 };
 
 for (var i = 0; i < events.length; i++) {
@@ -149,18 +149,18 @@ return results;
 
 function guessCategory(title) {
 var t = title.toLowerCase();
-if (t.includes(‘concert’) || t.includes(‘music’) || t.includes(‘band’) || t.includes(‘live’)) return ‘concert’;
-if (t.includes(‘game’) || t.includes(‘match’) || t.includes(‘vs’) || t.includes(‘race’) || t.includes(‘marathon’) || t.includes(‘run’)) return ‘sports’;
-if (t.includes(‘festival’) || t.includes(‘fair’) || t.includes(‘parade’) || t.includes(‘carnival’)) return ‘festival’;
-if (t.includes(‘market’) || t.includes(‘farmers’)) return ‘market’;
-return ‘community’;
+if (t.includes('concert') || t.includes('music') || t.includes('band') || t.includes('live')) return 'concert';
+if (t.includes('game') || t.includes('match') || t.includes('vs') || t.includes('race') || t.includes('marathon') || t.includes('run')) return 'sports';
+if (t.includes('festival') || t.includes('fair') || t.includes('parade') || t.includes('carnival')) return 'festival';
+if (t.includes('market') || t.includes('farmers')) return 'market';
+return 'community';
 }
 
 function guessCrowd(title) {
 var t = title.toLowerCase();
-if (t.includes(‘marathon’) || t.includes(‘parade’)) return 50000;
-if (t.includes(‘festival’) || t.includes(‘fair’)) return 10000;
-if (t.includes(‘concert’) || t.includes(‘game’)) return 5000;
-if (t.includes(‘market’)) return 3000;
+if (t.includes('marathon') || t.includes('parade')) return 50000;
+if (t.includes('festival') || t.includes('fair')) return 10000;
+if (t.includes('concert') || t.includes('game')) return 5000;
+if (t.includes('market')) return 3000;
 return 1000;
 }

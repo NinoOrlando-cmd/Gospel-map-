@@ -1,18 +1,18 @@
 export default async function handler(req, res) {
-res.setHeader(‘Access-Control-Allow-Origin’, ‘*’);
-res.setHeader(‘Access-Control-Allow-Methods’, ‘GET’);
+res.setHeader('Access-Control-Allow-Origin', '*');
+res.setHeader('Access-Control-Allow-Methods', 'GET');
 
 const API_KEY = process.env.SEARCHAPI_KEY;
 
 if (!API_KEY) {
-return res.status(500).json({ error: ‘SearchApi key not configured’ });
+return res.status(500).json({ error: 'SearchApi key not configured' });
 }
 
 const ZONES = [
-{ name: ‘Boston Core’, query: ‘events in Boston Cambridge Somerville Massachusetts’, location: ‘Boston, Massachusetts’ },
-{ name: ‘North Shore’, query: ‘events in Salem Lynn Gloucester Beverly Massachusetts’, location: ‘Salem, Massachusetts’ },
-{ name: ‘South Shore’, query: ‘events in Quincy Brockton Plymouth Massachusetts’, location: ‘Quincy, Massachusetts’ },
-{ name: ‘West MA’, query: ‘events in Worcester Springfield Lowell Massachusetts’, location: ‘Worcester, Massachusetts’ },
+{ name: 'Boston Core', query: 'events in Boston Cambridge Somerville Massachusetts', location: 'Boston, Massachusetts' },
+{ name: 'North Shore', query: 'events in Salem Lynn Gloucester Beverly Massachusetts', location: 'Salem, Massachusetts' },
+{ name: 'South Shore', query: 'events in Quincy Brockton Plymouth Massachusetts', location: 'Quincy, Massachusetts' },
+{ name: 'West MA', query: 'events in Worcester Springfield Lowell Massachusetts', location: 'Worcester, Massachusetts' },
 ];
 
 try {
@@ -97,10 +97,10 @@ async function geocodeEvents(events) {
 var results = [];
 
 var ZONE_COORDS = {
-‘Boston Core’: { lat: 42.3601, lng: -71.0589 },
-‘North Shore’: { lat: 42.5195, lng: -70.8967 },
-‘South Shore’: { lat: 42.2529, lng: -70.9773 },
-‘West MA’: { lat: 42.2626, lng: -71.8023 },
+'Boston Core': { lat: 42.3601, lng: -71.0589 },
+'North Shore': { lat: 42.5195, lng: -70.8967 },
+'South Shore': { lat: 42.2529, lng: -70.9773 },
+'West MA': { lat: 42.2626, lng: -71.8023 },
 };
 
 for (var i = 0; i < events.length; i++) {
@@ -152,19 +152,19 @@ return results;
 
 function guessCategory(title) {
 var t = title.toLowerCase();
-if (t.includes(‘concert’) || t.includes(‘music’) || t.includes(‘band’) || t.includes(‘live’) || t.includes(‘show’)) return ‘concert’;
-if (t.includes(‘game’) || t.includes(‘match’) || t.includes(’ vs ’) || t.includes(‘race’) || t.includes(‘marathon’) || t.includes(‘run’) || t.includes(‘5k’)) return ‘sports’;
-if (t.includes(‘festival’) || t.includes(‘fair’) || t.includes(‘parade’) || t.includes(‘carnival’) || t.includes(‘expo’)) return ‘festival’;
-if (t.includes(‘market’) || t.includes(‘farmers’) || t.includes(‘bazaar’)) return ‘market’;
-return ‘community’;
+if (t.includes('concert') || t.includes('music') || t.includes('band') || t.includes('live') || t.includes('show')) return 'concert';
+if (t.includes('game') || t.includes('match') || t.includes(' vs ') || t.includes('race') || t.includes('marathon') || t.includes('run') || t.includes('5k')) return 'sports';
+if (t.includes('festival') || t.includes('fair') || t.includes('parade') || t.includes('carnival') || t.includes('expo')) return 'festival';
+if (t.includes('market') || t.includes('farmers') || t.includes('bazaar')) return 'market';
+return 'community';
 }
 
 function guessCrowd(title, description) {
-var t = (title + ’ ’ + description).toLowerCase();
-if (t.includes(‘marathon’) || t.includes(‘parade’)) return 50000;
+var t = (title + ' ' + description).toLowerCase();
+if (t.includes('marathon') || t.includes('parade')) return 50000;
 
-if (t.includes(‘festival’) || t.includes(‘fair’) || t.includes(‘expo’)) return 10000;
-if (t.includes(‘concert’) || t.includes(‘game’) || t.includes(‘match’)) return 5000;
-if (t.includes(‘market’) || t.includes(‘5k’) || t.includes(‘run’)) return 3000;
+if (t.includes('festival') || t.includes('fair') || t.includes('expo')) return 10000;
+if (t.includes('concert') || t.includes('game') || t.includes('match')) return 5000;
+if (t.includes('market') || t.includes('5k') || t.includes('run')) return 3000;
 return 1000;
 }
