@@ -27,7 +27,10 @@
     --green: #52C070;
   }
 
-html { height: 100%; }
+html {
+height: 100%;
+background: #141414; /* extends header color behind notch/Dynamic Island */
+}
 
 body {
 font-family: ‘DM Sans’, sans-serif;
@@ -38,6 +41,8 @@ min-height: 100dvh;
 display: flex;
 flex-direction: column;
 overflow: hidden;
+padding-top: env(safe-area-inset-top);
+box-sizing: border-box;
 }
 
 header {
