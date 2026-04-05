@@ -76,16 +76,33 @@ color: var(--gold); letter-spacing: -0.3px;
 
 .logo span { font-size: 11px; color: var(--text-muted); font-weight: 300; margin-left: 4px; }
 
-.header-center { flex: 1; display: flex; justify-content: center; }
+.header-center { flex: 1; display: flex; justify-content: center; align-items: center; gap: 8px; }
+
+.locate-btn {
+background: linear-gradient(135deg, var(--gold), var(--gold-light));
+color: #0D0D0D;
+border: none;
+padding: 7px 14px;
+border-radius: 8px;
+font-family: ‘DM Sans’, sans-serif;
+font-weight: 700;
+font-size: 13px;
+cursor: pointer;
+transition: opacity 0.2s;
+white-space: nowrap;
+}
+
+.locate-btn:hover { opacity: 0.85; }
+.locate-btn:disabled { opacity: 0.6; cursor: default; }
 
 .city-selector {
 background: var(--surface2);
 border: 1px solid #333;
 color: var(--text);
-padding: 6px 12px;
+padding: 6px 10px;
 border-radius: 8px;
 font-family: ‘DM Sans’, sans-serif;
-font-size: 13px;
+font-size: 12px;
 cursor: pointer;
 }
 
@@ -325,7 +342,8 @@ align-items: center; gap: 3px; transition: color 0.2s;
 header { padding: 0 14px; height: 54px; }
 .logo h1 { font-size: 17px; }
 .logo span { display: none; }
-.city-selector { padding: 5px 6px; font-size: 11px; max-width: 100px; }
+.locate-btn { font-size: 11px; padding: 5px 10px; }
+.city-selector { padding: 5px 6px; font-size: 11px; max-width: 90px; }
 
 .main {
   flex-direction: column;
@@ -380,8 +398,10 @@ header { padding: 0 14px; height: 54px; }
     </div>
   </div>
   <div class="header-center">
+    <button class="locate-btn" id="locateBtn" onclick="locateMe()">📍 Near Me</button>
     <select class="city-selector" onchange="changeCity(this.value)">
-      <option value="boston">📍 Boston, MA</option>
+      <option value="" disabled selected>City...</option>
+      <option value="boston">Boston, MA</option>
       <option value="cambridge">Cambridge, MA</option>
       <option value="worcester">Worcester, MA</option>
       <option value="springfield">Springfield, MA</option>
@@ -695,6 +715,29 @@ var CITIES = {
   worcester: { lat:42.2626, lng:-71.8023, zoom:12 },
   springfield: { lat:42.1015, lng:-72.5898, zoom:12 }
 };
+
+function locateMe() {
+  var btn = document.getElementById('locateBtn');
+  if (!navigator.geolocation) {
+    btn.textContent = '📍 Near Me';
+    return;
+  }
+  btn.textContent = '⏳ Locating...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      map.setView([pos.coords.latitude, pos.coords.longitude], 13, { animate: true });
+      btn.textContent = '✅ Located';
+      btn.disabled = false;
+      setTimeout(function() { btn.textContent = '📍 Near Me'; }, 2000);
+    },
+    function() {
+      btn.textContent = '📍 Near Me';
+      btn.disabled = false;
+    },
+    { timeout: 10000, maximumAge: 300000 }
+  );
+}
 
 function changeCity(val) {
   var c = CITIES[val];
