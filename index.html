@@ -339,11 +339,13 @@ align-items: center; gap: 3px; transition: color 0.2s;
 .tab-icon { font-size: 18px; }
 
 @media (max-width: 768px) {
-header { padding: 0 14px; height: 54px; }
-.logo h1 { font-size: 17px; }
+header { padding: 0 0 0 14px; height: 54px; }
+.logo h1 { display: none; }
 .logo span { display: none; }
+.donate-btn { position: absolute; top: 0; right: 0; }
+.header-center { padding-right: 140px; }
 .locate-btn { font-size: 11px; padding: 5px 10px; }
-.city-selector { padding: 5px 6px; font-size: 11px; max-width: 90px; }
+.city-selector { padding: 4px 4px; font-size: 10px; max-width: 90px; }
 
 .main {
   flex-direction: column;
