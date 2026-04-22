@@ -387,6 +387,48 @@ header { padding: 0 0 0 14px; height: 54px; }
 .stats-bar { padding: 6px 14px; gap: 16px; }
 
 }
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.skeleton-card {
+background: var(--surface2);
+border: 1px solid #2a2a2a;
+border-radius: 12px;
+padding: 14px;
+margin-bottom: 10px;
+}
+
+.skeleton-line {
+background: linear-gradient(90deg, var(--surface2) 25%, var(--surface3) 50%, var(--surface2) 75%);
+background-size: 400% 100%;
+animation: shimmer 1.5s infinite;
+border-radius: 4px;
+margin-bottom: 8px;
+}
+
+.loading-indicator {
+align-items: center;
+gap: 8px;
+padding: 8px 20px;
+font-size: 11px;
+color: var(--text-muted);
+border-bottom: 1px solid #2a2a2a;
+flex-shrink: 0;
+}
+
+.loading-spinner {
+width: 12px;
+height: 12px;
+border: 2px solid #333;
+border-top-color: var(--gold);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+flex-shrink: 0;
+}
 </style>
 
 </head>
@@ -432,6 +474,10 @@ header { padding: 0 0 0 14px; height: 54px; }
       <div class="sort-chip" onclick="sortEvents('date', this)">📅 Date</div>
       <div class="sort-chip" onclick="sortEvents('weekend', this)">📆 This Weekend</div>
       <div class="sort-chip" onclick="sortEvents('free', this)">🆓 Free Only</div>
+    </div>
+    <div class="loading-indicator" id="loadingIndicator" style="display:none">
+      <div class="loading-spinner"></div>
+      <span>Loading live events…</span>
     </div>
     <div class="event-list" id="eventList"></div>
     <div class="stats-bar">
@@ -493,7 +539,7 @@ header { padding: 0 0 0 14px; height: 54px; }
 </div>
 
 <script>
-let map, markers = [], activeFilter = 'all', allEvents = [];
+let map, markers = [], activeFilter = 'all', allEvents = [], loadingLive = false;
 let selectedDonation = 10;
 const STRIPE_LINK = 'https://donate.stripe.com/eVq4gAe9T1mf4Bu6yzbbG00';
 const APP_URL = 'https://ninoorlando-cmd.github.io/Gospel-map-';
@@ -539,16 +585,54 @@ function initMap() {
   loadEvents();
 }
 
-function showLoading() {
-  document.getElementById('eventList').innerHTML =
-    '<div style="text-align:center;padding:40px;color:#888;">' +
-    '<div style="font-size:28px;margin-bottom:12px;">✝</div>' +
-    '<div style="font-size:14px;">Loading events across Massachusetts...</div>' +
-    '</div>';
+function showSkeletonList() {
+  var html = '';
+  for (var i = 0; i < 5; i++) {
+    html +=
+      '<div class="skeleton-card">' +
+        '<div class="skeleton-line" style="width:70%;height:14px"></div>' +
+        '<div class="skeleton-line" style="width:45%"></div>' +
+        '<div class="skeleton-line" style="width:60%"></div>' +
+        '<div class="skeleton-line" style="width:35%"></div>' +
+      '</div>';
+  }
+  document.getElementById('eventList').innerHTML = html;
+  document.getElementById('totalEvents').textContent = '...';
+  document.getElementById('totalPeople').textContent = '...';
+  document.getElementById('loadingIndicator').style.display = 'flex';
+}
+
+function buildPopup(ev) {
+  return '<div class="popup-inner">' +
+    '<div class="popup-name">'+ev.name+'</div>' +
+    '<div class="popup-crowd">'+formatCrowd(ev.crowd)+'</div>' +
+    '<div class="popup-crowd-label">projected attendees</div>' +
+    '<div class="popup-row" style="margin-top:8px">📅 '+ev.date+' · '+ev.time+'</div>' +
+    '<div class="popup-row">📍 '+ev.location+'</div>' +
+    '<div class="popup-row" style="margin-top:6px;font-size:10px;line-height:1.4;">'+ev.description+'</div>' +
+    '<div class="popup-row" style="margin-top:4px;color:#666">Source: '+ev.source+'</div>' +
+  '</div>';
+}
+
+function renderMapOnly(events) {
+  markers.forEach(function(m){ map.removeLayer(m); });
+  markers = [];
+  events.forEach(function(ev) {
+    if (!ev.lat || !ev.lng) return;
+    var marker = L.marker([ev.lat, ev.lng], { icon: makeIcon(ev.crowd) })
+      .addTo(map)
+      .bindPopup(buildPopup(ev), { maxWidth: 260 });
+    markers.push(marker);
+  });
 }
 
 function loadEvents() {
-  showLoading();
+  // Show fallback data immediately — map pins + skeleton cards in sidebar
+  allEvents = getFallbackEvents();
+  loadingLive = true;
+  showSkeletonList();
+  renderMapOnly(allEvents);
+
   Promise.allSettled([
     fetch('https://gospel-map.vercel.app/api/ticketmaster').then(function(r){ return r.json(); }),
     fetch('https://gospel-map.vercel.app/api/serpapi').then(function(r){ return r.json(); }),
@@ -568,12 +652,8 @@ function loadEvents() {
       }
     });
 
-    if (combined.length > 0) {
-      allEvents = combined;
-    } else {
-      allEvents = getFallbackEvents();
-    }
-
+    loadingLive = false;
+    allEvents = combined.length > 0 ? combined : getFallbackEvents();
     renderAll();
   });
 }
@@ -589,6 +669,7 @@ function getFallbackEvents() {
 }
 
 function renderAll() {
+  if (!loadingLive) document.getElementById('loadingIndicator').style.display = 'none';
   var filtered = getFiltered();
   markers.forEach(function(m){ map.removeLayer(m); });
   markers = [];
@@ -622,20 +703,9 @@ function renderAll() {
     card.onclick = function(){ focusEvent(ev); };
     list.appendChild(card);
 
-    var popup =
-      '<div class="popup-inner">' +
-        '<div class="popup-name">'+ev.name+'</div>' +
-        '<div class="popup-crowd">'+formatCrowd(ev.crowd)+'</div>' +
-        '<div class="popup-crowd-label">projected attendees</div>' +
-        '<div class="popup-row" style="margin-top:8px">📅 '+ev.date+' · '+ev.time+'</div>' +
-        '<div class="popup-row">📍 '+ev.location+'</div>' +
-        '<div class="popup-row" style="margin-top:6px;font-size:10px;line-height:1.4;">'+ev.description+'</div>' +
-        '<div class="popup-row" style="margin-top:4px;color:#666">Source: '+ev.source+'</div>' +
-      '</div>';
-
     var marker = L.marker([ev.lat, ev.lng], { icon: makeIcon(ev.crowd) })
       .addTo(map)
-      .bindPopup(popup, { maxWidth: 260 });
+      .bindPopup(buildPopup(ev), { maxWidth: 260 });
 
     marker.on('click', function(){
       document.querySelectorAll('.event-card').forEach(function(c){ c.classList.remove('active'); });
