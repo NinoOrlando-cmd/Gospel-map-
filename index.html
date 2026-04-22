@@ -544,6 +544,38 @@ let selectedDonation = 10;
 const STRIPE_LINK = 'https://donate.stripe.com/eVq4gAe9T1mf4Bu6yzbbG00';
 const APP_URL = 'https://ninoorlando-cmd.github.io/Gospel-map-';
 const API_URL = 'https://gospel-map.vercel.app/api/events';
+const CACHE_KEY = 'gospelmap_events_cache';
+const CACHE_TIME_KEY = 'gospelmap_cache_time';
+const CACHE_MAX_AGE = 24 * 60 * 60 * 1000;
+
+function saveEventsCache(events) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(events));
+    localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
+  } catch (e) {}
+}
+
+function loadEventsCache() {
+  try {
+    var age = Date.now() - parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0');
+    if (age > CACHE_MAX_AGE) return null;
+    var raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    var events = JSON.parse(raw);
+    return Array.isArray(events) && events.length > 0 ? events : null;
+  } catch (e) { return null; }
+}
+
+function showNoDataState() {
+  document.getElementById('loadingIndicator').style.display = 'none';
+  document.getElementById('eventList').innerHTML =
+    '<div style="text-align:center;padding:40px;color:#888;">' +
+    '<div style="font-size:28px;margin-bottom:12px;">✝</div>' +
+    '<div style="font-size:13px;">Couldn\'t load events. Check your connection and refresh.</div>' +
+    '</div>';
+  document.getElementById('totalEvents').textContent = '0';
+  document.getElementById('totalPeople').textContent = '0';
+}
 
 function crowdColor(n) {
   if (n >= 100000) return '#E05252';
@@ -614,24 +646,19 @@ function buildPopup(ev) {
   '</div>';
 }
 
-function renderMapOnly(events) {
-  markers.forEach(function(m){ map.removeLayer(m); });
-  markers = [];
-  events.forEach(function(ev) {
-    if (!ev.lat || !ev.lng) return;
-    var marker = L.marker([ev.lat, ev.lng], { icon: makeIcon(ev.crowd) })
-      .addTo(map)
-      .bindPopup(buildPopup(ev), { maxWidth: 260 });
-    markers.push(marker);
-  });
-}
 
 function loadEvents() {
-  // Show fallback data immediately — map pins + skeleton cards in sidebar
-  allEvents = getFallbackEvents();
+  var cached = loadEventsCache();
   loadingLive = true;
-  showSkeletonList();
-  renderMapOnly(allEvents);
+
+  if (cached) {
+    // Show cached events instantly; indicator stays visible while refreshing in background
+    allEvents = cached;
+    renderAll();
+    document.getElementById('loadingIndicator').style.display = 'flex';
+  } else {
+    showSkeletonList();
+  }
 
   Promise.allSettled([
     fetch('https://gospel-map.vercel.app/api/ticketmaster').then(function(r){ return r.json(); }),
@@ -653,20 +680,20 @@ function loadEvents() {
     });
 
     loadingLive = false;
-    allEvents = combined.length > 0 ? combined : getFallbackEvents();
-    renderAll();
+
+    if (combined.length > 0) {
+      saveEventsCache(combined);
+      allEvents = combined;
+      renderAll();
+    } else if (allEvents.length > 0) {
+      // API returned nothing new — keep showing cached events, just hide the indicator
+      document.getElementById('loadingIndicator').style.display = 'none';
+    } else {
+      showNoDataState();
+    }
   });
 }
 
-function getFallbackEvents() {
-  return [
-    { id:1, name:"Boston Calling Music Festival", category:"festival", date:"Mar 15, 2026", time:"12:00 PM", location:"Harvard Athletic Complex, Allston", lat:42.3736, lng:-71.1230, crowd:45000, capacity:50000, description:"3-day music festival with 50+ artists.", source:"Sample Data" },
-    { id:2, name:"St. Patricks Day Parade", category:"festival", date:"Mar 16, 2026", time:"1:00 PM", location:"Broadway St, South Boston", lat:42.3355, lng:-71.0589, crowd:600000, capacity:null, description:"One of the largest parades in the US.", source:"Sample Data" },
-    { id:3, name:"Boston Marathon", category:"sports", date:"Apr 21, 2026", time:"9:00 AM", location:"Boylston St, Boston", lat:42.3476, lng:-71.0839, crowd:500000, capacity:null, description:"World oldest annual marathon.", source:"Sample Data" },
-    { id:4, name:"Boston Red Sox Opening Day", category:"sports", date:"Apr 3, 2026", time:"3:05 PM", location:"Fenway Park, Boston", lat:42.3467, lng:-71.0972, crowd:37755, capacity:37755, description:"MLB Opening Day at Fenway.", source:"Sample Data" },
-    { id:5, name:"Cambridge Arts River Festival", category:"community", date:"Apr 5, 2026", time:"11:00 AM", location:"Memorial Drive, Cambridge", lat:42.3617, lng:-71.1050, crowd:40000, capacity:null, description:"Free annual arts festival.", source:"Sample Data" }
-  ];
-}
 
 function renderAll() {
   if (!loadingLive) document.getElementById('loadingIndicator').style.display = 'none';
