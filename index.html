@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>GospelMap — Find the Crowds</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#C9A84C">
@@ -29,6 +29,7 @@
 
 html {
 background: #141414;
+min-height: calc(100% + env(safe-area-inset-top));
 }
 
 body {
@@ -334,7 +335,7 @@ bottom: 0; left: 0; right: 0;
 background: var(--surface);
 border-top: 1px solid #2a2a2a;
 height: 60px;
-padding-bottom: env(safe-area-inset-bottom);
+padding-bottom: max(env(safe-area-inset-bottom), 8px);
 z-index: 1000;
 }
 
@@ -374,7 +375,7 @@ header {
 .main {
   flex-direction: column;
   top: calc(54px + env(safe-area-inset-top));
-  bottom: calc(60px + env(safe-area-inset-bottom));
+  bottom: calc(60px + max(env(safe-area-inset-bottom), 8px));
 }
 
 .sidebar {
