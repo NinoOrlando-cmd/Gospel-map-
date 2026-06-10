@@ -273,6 +273,27 @@ font-weight: 500; font-size: 15px; cursor: pointer;
 width: 100%; margin-bottom: 12px; transition: opacity 0.2s;
 }
 .donate-now-btn:hover { opacity: 0.9; }
+.donate-now-btn:disabled { opacity: 0.6; cursor: default; }
+
+.custom-amt-wrap {
+display: none; align-items: center; margin-bottom: 20px;
+background: var(--surface2); border: 1px solid #333; border-radius: 10px;
+padding: 0 14px; transition: border-color 0.2s;
+}
+.custom-amt-wrap.open { display: flex; }
+.custom-amt-wrap:focus-within { border-color: var(--gold); }
+.custom-amt-prefix { color: var(--text-muted); font-size: 18px; }
+.custom-amt-input {
+flex: 1; background: none; border: none; outline: none;
+color: var(--text); font-size: 16px; padding: 12px 8px;
+font-family: inherit;
+}
+
+.donate-error {
+display: none; color: #ff6b6b; font-size: 13px;
+margin-bottom: 12px; text-align: center;
+}
+.donate-error.show { display: block; }
 
 .modal-close {
 background: none; border: none; color: var(--text-muted);
@@ -533,6 +554,12 @@ flex-shrink: 0;
       <button class="amt-btn" onclick="selectAmt(this,100)">$100</button>
       <button class="amt-btn" onclick="selectAmt(this,'other')">Other</button>
     </div>
+    <div class="custom-amt-wrap" id="customAmtWrap">
+      <span class="custom-amt-prefix">$</span>
+      <input type="number" id="customAmt" class="custom-amt-input" inputmode="decimal"
+             min="1" max="10000" step="1" placeholder="Enter amount" oninput="onCustomInput()">
+    </div>
+    <div class="donate-error" id="donateError"></div>
     <button class="donate-now-btn" id="donateNowBtn" onclick="goToDonate()">Donate $10 — Stripe Checkout</button>
     <button class="modal-close" onclick="closeDonation()">Maybe later</button>
   </div>
@@ -558,7 +585,6 @@ flex-shrink: 0;
 <script>
 let map, markers = [], activeFilter = 'all', allEvents = [], loadingLive = false;
 let selectedDonation = 10;
-const STRIPE_LINK = 'https://donate.stripe.com/eVq4gAe9T1mf4Bu6yzbbG00';
 const APP_URL = 'https://ninoorlando-cmd.github.io/Gospel-map-';
 const API_URL = 'https://gospel-map.vercel.app/api/events';
 const CACHE_KEY = 'gospelmap_events_cache';
@@ -863,21 +889,90 @@ function changeCity(val) {
 function openDonation() { document.getElementById('donationModal').classList.add('open'); }
 function closeDonation() { document.getElementById('donationModal').classList.remove('open'); }
 
+function showDonateError(msg) {
+  var e = document.getElementById('donateError');
+  e.textContent = msg;
+  e.classList.add('show');
+}
+function hideDonateError() {
+  var e = document.getElementById('donateError');
+  e.textContent = '';
+  e.classList.remove('show');
+}
+
 function selectAmt(el, val) {
   document.querySelectorAll('.amt-btn').forEach(function(b){ b.classList.remove('selected'); });
   el.classList.add('selected');
   selectedDonation = val;
+  hideDonateError();
+
+  var wrap = document.getElementById('customAmtWrap');
   var btn = document.getElementById('donateNowBtn');
-  btn.textContent = val === 'other' ? 'Enter Custom Amount' : 'Donate $' + val + ' — Stripe Checkout';
+
+  if (val === 'other') {
+    wrap.classList.add('open');
+    document.getElementById('customAmt').focus();
+    updateDonateLabel();
+  } else {
+    wrap.classList.remove('open');
+    btn.textContent = 'Donate $' + val + ' — Stripe Checkout';
+  }
 }
 
-function goToDonate() {
+function onCustomInput() {
+  hideDonateError();
+  updateDonateLabel();
+}
+
+function updateDonateLabel() {
+  var btn = document.getElementById('donateNowBtn');
+  var amt = parseFloat(document.getElementById('customAmt').value);
+  btn.textContent = (isFinite(amt) && amt > 0)
+    ? 'Donate $' + amt + ' — Stripe Checkout'
+    : 'Enter an amount';
+}
+
+function getDonationAmount() {
   if (selectedDonation === 'other') {
-    var amt = prompt('Enter your donation amount ($):');
-    if (!amt || isNaN(amt) || parseFloat(amt) < 1) return;
+    return parseFloat(document.getElementById('customAmt').value);
   }
-  window.open(STRIPE_LINK, '_blank');
-  closeDonation();
+  return selectedDonation;
+}
+
+async function goToDonate() {
+  hideDonateError();
+  var amount = getDonationAmount();
+
+  if (!isFinite(amount) || amount < 1) {
+    showDonateError('Please enter a donation amount of at least $1.');
+    return;
+  }
+  if (amount > 10000) {
+    showDonateError('The maximum donation is $10,000.');
+    return;
+  }
+
+  var btn = document.getElementById('donateNowBtn');
+  var originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Starting secure checkout…';
+
+  try {
+    var res = await fetch('https://gospel-map.vercel.app/api/create-donation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amount })
+    });
+    var data = await res.json();
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || 'Could not start checkout. Please try again.');
+    }
+    window.location.href = data.url;
+  } catch (err) {
+    showDonateError(err.message || 'Something went wrong. Please try again.');
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 }
 
 function shareApp() {
